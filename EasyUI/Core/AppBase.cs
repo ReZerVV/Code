@@ -22,7 +22,7 @@ namespace EasyUI.Core
         public AppBase(int width, int height, string title = "App (cyril project)")
         {
             Console.Title = title;
-            MainCanvas = new Canvas(width, height);
+            MainCanvas = new Canvas(width, height, Color.White);
             if (MainWindow != null)
             {
                 MainWindow.Size.x = MainCanvas.Width;
@@ -83,7 +83,7 @@ namespace EasyUI.Core
                 if (MainCanvas.Width != Console.WindowWidth ||
                     MainCanvas.Height != Console.WindowHeight)
                 {
-                    MainCanvas = new Canvas(Console.WindowWidth, Console.WindowHeight);
+                    MainCanvas = new Canvas(Console.WindowWidth, Console.WindowHeight, Color.White);
                     if (MainWindow != null)
                     {
                         MainWindow.Size.x = MainCanvas.Width;

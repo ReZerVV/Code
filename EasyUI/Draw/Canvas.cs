@@ -11,18 +11,19 @@ namespace EasyUI.Draw
         public int Width { get; private set; }
         public int Height { get; private set; }
 
-        public Canvas(int width, int height)
+        public Color ClearColor { get; set; }
+
+        public Canvas(int width, int height, Color clearColor)
         {
             Width = width;
             Height = height;
+            ClearColor = clearColor;
             viewBuffer = new Pixel[Width * Height];
             for (int indexBuffer = 0; indexBuffer < Width * Height; indexBuffer++)
             {
                 viewBuffer[indexBuffer] = new Pixel();
             }
             Console.OutputEncoding = Encoding.UTF8;
-            Console.SetBufferSize(width, height);
-            Console.SetWindowSize(width, height);
             Console.CursorVisible = false;
         }
 
@@ -51,7 +52,7 @@ namespace EasyUI.Draw
             for (int indexBuffer = 0; indexBuffer < Width * Height; indexBuffer++)
             {
                 viewBuffer[indexBuffer].Symbol = " ";
-                viewBuffer[indexBuffer].Background = new Color(0, 0, 0);
+                viewBuffer[indexBuffer].Background = ClearColor;
             }
         }
 
@@ -71,6 +72,22 @@ namespace EasyUI.Draw
             int temp = x;
             x = y;
             y = temp;
+        }
+
+        public void CanvasToCanvas(Canvas canvas, int offsetCanvasX, int offsetCanvasY, int x, int y, int w, int h)
+        {
+            for (int indexX = x, indexCanvasX = offsetCanvasX; indexX < x + w; indexX++, indexCanvasX++)
+            {
+                for (int indexY = y, indexCanvasY = offsetCanvasY; indexY < y + h; indexY++, indexCanvasY++)
+                {
+                    if (IsValidCoords(indexX, indexY) && canvas.IsValidCoords(indexCanvasX, indexCanvasY))
+                    {
+                        int indexBuffer = CoordsToIndex(indexX, indexY);
+                        int indexCanvasBuffer = canvas.CoordsToIndex(indexCanvasX, indexCanvasY);
+                        viewBuffer[indexBuffer] = canvas.viewBuffer[indexCanvasBuffer];
+                    }
+                }
+            }
         }
         #endregion
 

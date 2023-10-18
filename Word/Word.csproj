@@ -7,4 +7,9 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\EasyUI\EasyUI.csproj" />
+    <ProjectReference Include="..\Word.Core\Word.Core.csproj" />
+  </ItemGroup>
+
 </Project>
