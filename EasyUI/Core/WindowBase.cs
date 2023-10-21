@@ -29,19 +29,28 @@ namespace EasyUI.Core
 
         public virtual void Input(ConsoleKeyInfo keyInfo)
         {
-            Content.Input(keyInfo);
+            if (Content != null)
+            {
+                Content.Input(keyInfo);
+            }
         }
 
         public virtual void Update()
         {
-            content.Position = Position;
-            content.Size = Size;
-            Content.Update();
+            if (Content != null)
+            { 
+                Content.Update();
+            }
         }
 
         public virtual void LateUpdate()
         {
-            Content.LateUpdate();
+            if (Content != null)
+            {
+                content.Position = Position;
+                content.Size = Size;
+                Content.LateUpdate();
+            }
         }
 
         public virtual void Render(Canvas canvas)

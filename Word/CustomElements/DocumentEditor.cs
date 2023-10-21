@@ -9,7 +9,7 @@ namespace Word.CustomElements
         public const int PAGE_WIDTH_SIZE = 80;
         public const int PAGE_HEIGHT_SIZE = 40;
 
-        private Document Document { get; set; } = new Document("New document");
+        private Document Document { get; set; } = Document.SampleDocument();
         private string Text { get; set; }
         private Vector2 cursorPosition { get; set; } = Vector2.Zero;
         private Canvas documentCanvas { get; set; } = new Canvas(PAGE_WIDTH_SIZE, 200, Color.Black);
@@ -55,7 +55,8 @@ namespace Word.CustomElements
 
         private void CursorMoveUp()
         {
-            cursorPosition.y--;
+            if (cursorPosition.y > 0)
+                cursorPosition.y--;
         }
 
         private void CursorMoveDown()
@@ -93,33 +94,8 @@ namespace Word.CustomElements
 
         public void Render(Canvas canvas)
         {
-            { // Render Menubar "◐◓◑◒"
-                canvas.DrawText(
-                    $"│{Document.Name}│",
-                    Position.x,
-                    Position.y,
-                    Foreground,
-                    Background);
-            }
             {
-                //canvas.DrawSymbol(
-                //    "▼",
-                //    (canvas.Width - PAGE_WIDTH_SIZE) / 2,
-                //    Position.y + 4,
-                //    Foreground,
-                //    Background);
-                //canvas.DrawSymbol(
-                //    "▼",
-                //    (canvas.Width - PAGE_WIDTH_SIZE) / 2 + PAGE_WIDTH_SIZE - 1,
-                //    Position.y + 4,
-                //    Foreground,
-                //    Background);
-                //canvas.DrawUnicodeHorizontalLine(
-                //    (canvas.Width - PAGE_WIDTH_SIZE) / 2,
-                //    Position.y + 5,
-                //    PAGE_WIDTH_SIZE,
-                //    Foreground,
-                //    Background);
+                
 
                 //canvas.DrawUnicodeHorizontalLine(
                 //    (canvas.Width - PAGE_WIDTH_SIZE) / 2,
@@ -140,30 +116,94 @@ namespace Word.CustomElements
                 //    Foreground,
                 //    Background);
             }
+            documentCanvas.ClearBuffer();
 
-            //documentCanvas.DrawSymbol(
-            //    " ",
-            //    cursorPosition.x,
-            //    cursorPosition.y,
-            //    Background,
-            //    Foreground);
+            Queue<DocumentNode> documentNodeQueue = new Queue<DocumentNode>();
+            documentNodeQueue.Enqueue(Document.Body);
+            int rowPosition = 0;
+            while (documentNodeQueue.TryDequeue(out DocumentNode documentNode))
+            {
+                if (documentNode.Type == DocumentNodeType.Span)
+                {
+                    int colPosition = 4;
+                    for (int index = 0; index < documentNode.InnerText.Length; index += documentCanvas.Width - 9, rowPosition++)
+                    {
+                        if (rowPosition % PAGE_HEIGHT_SIZE == 0)
+                        {
+                            documentCanvas.DrawBorder(
+                                3, 
+                                rowPosition,
+                                PAGE_WIDTH_SIZE - 7,
+                                PAGE_HEIGHT_SIZE,
+                                Foreground,
+                                Background);
+                            rowPosition++;
+                        }
 
-            documentCanvas.DrawFillRect(50,50,50,50,Color.Red);
+                        documentCanvas.DrawText(
+                           text: rowPosition.ToString(),
+                           x: 0,
+                           y: rowPosition,
+                           foreground: Foreground,
+                           background: Background);
+                        documentCanvas.DrawText(
+                            text: documentNode.InnerText.Substring(index, Math.Min(documentCanvas.Width - 9, documentNode.InnerText.Length - index)),
+                            x: colPosition,
+                            y: rowPosition,
+                            foreground: Foreground,
+                            background: Background);
+                    }
+                }
+                foreach (DocumentNode documentChildNode in documentNode.ChildNodes) 
+                {
+                    documentNodeQueue.Enqueue(documentChildNode);
+                }
+                if (documentNode.NextSibling != null)
+                {
+                    documentNodeQueue.Enqueue(documentNode.NextSibling);
+                }
+            }
+
+            documentCanvas.DrawSymbol(
+                " ",
+                cursorPosition.x,
+                cursorPosition.y,
+                Background,
+                Foreground);
 
             canvas.CanvasToCanvas(
                 documentCanvas,
                 0,
-                cursorPosition.y,
+                cursorPosition.y - (cursorPosition.y % PAGE_HEIGHT_SIZE),
                 (canvas.Width - PAGE_WIDTH_SIZE) / 2,
-                (canvas.Height - PAGE_HEIGHT_SIZE) / 2,
+                6,
                 PAGE_WIDTH_SIZE,
                 PAGE_HEIGHT_SIZE);
 
-            canvas.DrawBorder(
-                (canvas.Width - PAGE_WIDTH_SIZE) / 2,
-                (canvas.Height - PAGE_HEIGHT_SIZE) / 2,
-                PAGE_WIDTH_SIZE,
-                PAGE_HEIGHT_SIZE,
+            //canvas.DrawBorder(
+            //    (canvas.Width - PAGE_WIDTH_SIZE) / 2,
+            //    (canvas.Height - PAGE_HEIGHT_SIZE) / 2,
+            //    PAGE_WIDTH_SIZE,
+            //    PAGE_HEIGHT_SIZE,
+            //    Foreground,
+            //    Background);
+
+            canvas.DrawSymbol(
+                    "▼",
+                    (canvas.Width - PAGE_WIDTH_SIZE) / 2 + 4,
+                    Position.y + 4,
+                    Foreground,
+                    Background);
+            canvas.DrawSymbol(
+                "▼",
+                (canvas.Width - PAGE_WIDTH_SIZE) / 2 + PAGE_WIDTH_SIZE - 6,
+                Position.y + 4,
+                Foreground,
+                Background);
+            canvas.DrawUnicodeHorizontalLine(
+                (canvas.Width - PAGE_WIDTH_SIZE - 10) / 2,
+                Position.y + 5,
+                PAGE_WIDTH_SIZE + 10,
                 Foreground,
                 Background);
         }

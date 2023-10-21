@@ -5,34 +5,108 @@ namespace EasyUI.Core
 {
     public abstract class AppBase
     {
-        protected Canvas MainCanvas;
-        public static WindowBase? MainWindow = null;
-        public static List<WindowBase> Frames { get; set; } = new List<WindowBase>();
-        public static List<string> Errors = new List<string>();
-        
+        protected Canvas MainCanvas { get; set; }
         protected readonly int FPS;
-        protected bool isOpenDebugInfo;
+        protected bool IsOpenDebugInfo { get; set; }
+        protected List<string> Errors { get; set; } = new List<string>();
+        
         private System.Timers.Timer fpsTimer;
         private Stopwatch fpsSynchronizationTimer;
         private int fps;
+        private List<int> fpsHistory = new List<int>();
         private float frt;
+        private List<int> frtHistory = new List<int>();
 
+        public static WindowBase? MainWindow = null;
         public bool IsOpen { get; private set; }
 
-        public AppBase(int width, int height, string title = "App (cyril project)")
+        public AppBase(string title = "App (cyril project)")
         {
             Console.Title = title;
-            MainCanvas = new Canvas(width, height, Color.White);
+            MainCanvas = new Canvas(Console.WindowWidth, Console.WindowHeight, Color.Black);
             if (MainWindow != null)
             {
-                MainWindow.Size.x = MainCanvas.Width;
+                MainWindow.Size.x = MainCanvas.Width; 
                 MainWindow.Size.y = MainCanvas.Height;
             }
             IsOpen = true;
-            isOpenDebugInfo = false;
+            IsOpenDebugInfo = false;
             FPS = 60;
             fpsTimer = new System.Timers.Timer(1000);
             fpsSynchronizationTimer = new Stopwatch();
+        }
+
+        private void DrawInfoDebugMenu()
+        {
+            for (int colPosition = 0, index = fpsHistory.Count >= 40 ? fpsHistory.Count - 40 : 0;
+            index < fpsHistory.Count;
+            colPosition++, index++)
+            {
+                if (fpsHistory[colPosition] > 0)
+                {
+                    MainCanvas.DrawLine(
+                        x0: colPosition,
+                        y0: 23 - fpsHistory[colPosition],
+                        x1: colPosition,
+                        y1: 23,
+                        new Color(24, 61, 61));
+                    MainCanvas.DrawLine(
+                        x0: colPosition,
+                        y0: 23 - fpsHistory[colPosition],
+                        x1: colPosition,
+                        y1: 23 - fpsHistory[colPosition],
+                        new Color(92, 131, 116));
+                }
+                else
+                {
+                    MainCanvas.DrawLine(
+                        x0: colPosition,
+                        y0: 23,
+                        x1: colPosition,
+                        y1: 23,
+                        new Color(4, 13, 18));
+                }
+            }
+            if (fpsHistory.Count >= 40)
+            {
+                fpsHistory.RemoveRange(0, fpsHistory.Count - 40);
+            }
+            for (int colPosition = 0, index = frtHistory.Count >= 40 ? frtHistory.Count - 40 : 0;
+                index < frtHistory.Count;
+                colPosition++, index++)
+            {
+                if (frtHistory[colPosition] > 0)
+                {
+                    MainCanvas.DrawLine(
+                        x0: colPosition,
+                        y0: 13 - frtHistory[colPosition],
+                        x1: colPosition,
+                        y1: 13,
+                        new Color(39, 55, 77));
+                    MainCanvas.DrawLine(
+                        x0: colPosition,
+                        y0: 13 - frtHistory[colPosition],
+                        x1: colPosition,
+                        y1: 13 - frtHistory[colPosition],
+                        new Color(157, 178, 191));
+                }
+                else
+                {
+                    MainCanvas.DrawLine(
+                        x0: colPosition,
+                        y0: 13,
+                        x1: colPosition,
+                        y1: 13,
+                        new Color(0, 21, 36));
+                }
+            }
+            if (frtHistory.Count >= 40)
+            {
+                frtHistory.RemoveRange(0, frtHistory.Count - 40);
+            }
+            MainCanvas.DrawText($"Frames per second: {fps}", 0, 0, Color.White, new Color(50, 50, 100));
+            MainCanvas.DrawText($"Frame rendering time: {frt:F2}", 0, 1, Color.White, new Color(50, 50, 100));
+            MainCanvas.DrawText($"Window size: {Console.WindowWidth}:{Console.WindowHeight}", 0, 2, Color.White, new Color(50, 50, 100));
         }
 
         public void AppLoop()
@@ -46,6 +120,7 @@ namespace EasyUI.Core
             fpsTimer.Elapsed += (sender, e) =>
             {
                 fps = fpsCounter;
+                fpsHistory.Add((int)fps / 10);
                 fpsCounter = 0;
             };
 
@@ -60,30 +135,21 @@ namespace EasyUI.Core
                     OnLateUpdate();
                     OnRender();
                 }
-                if (isOpenDebugInfo)
+                if (IsOpenDebugInfo)
                 {
-                    MainCanvas.DrawText($"Frames per second: {fps}", 0, 0, Color.White, new Color(50, 50, 100));
-                    MainCanvas.DrawText($"Frame rendering time: {frt:F2}", 0, 1, Color.White, new Color(50, 50, 100));
-                    MainCanvas.DrawText($"Window size: {Console.WindowWidth}:{Console.WindowHeight}", 0, 2, Color.White, new Color(50, 50, 100));
-                    if (Errors.Count > 0)
-                    {
-                        MainCanvas.DrawText($"[Errors]", 0, 3, Color.Red, new Color(50, 50, 100));
-                        for (int indexError = 0, y = 4; indexError < Errors.Count; indexError++, y++)
-                        {
-                            MainCanvas.DrawText($" [{indexError + 1}] {Errors[indexError]}", 0, y, Color.Red, new Color(50, 50, 100));
-                        }
-                    }
+                    DrawInfoDebugMenu();
                 }
                 MainCanvas.RenderBuffer();
                 fpsSynchronizationTimer.Stop();
 
                 fpsCounter++;
                 frt = (float)fpsSynchronizationTimer.Elapsed.TotalMilliseconds;
+                frtHistory.Add((int)frt / 5);
 
                 if (MainCanvas.Width != Console.WindowWidth ||
                     MainCanvas.Height != Console.WindowHeight)
                 {
-                    MainCanvas = new Canvas(Console.WindowWidth, Console.WindowHeight, Color.White);
+                    MainCanvas = new Canvas(Console.WindowWidth, Console.WindowHeight, Color.Black);
                     if (MainWindow != null)
                     {
                         MainWindow.Size.x = MainCanvas.Width;
@@ -117,7 +183,7 @@ namespace EasyUI.Core
                     }
                     if (keyInfo.Modifiers == ConsoleModifiers.Control && keyInfo.Key == ConsoleKey.I)
                     {
-                        isOpenDebugInfo = !isOpenDebugInfo;
+                        IsOpenDebugInfo = !IsOpenDebugInfo;
                     }
                     OnInput(keyInfo);
                 }
@@ -135,10 +201,6 @@ namespace EasyUI.Core
             {
                 MainWindow.Input(keyInfo);
             }
-            foreach (var frame in Frames)
-            {
-                frame.Input(keyInfo);
-            }
         }
 
         protected virtual void OnRender()
@@ -146,10 +208,6 @@ namespace EasyUI.Core
             if (MainWindow != null)
             {
                 MainWindow.Render(MainCanvas);
-            }
-            foreach (var frame in Frames)
-            {
-                frame.Render(MainCanvas);
             }
         }
 
@@ -159,10 +217,6 @@ namespace EasyUI.Core
             {
                 MainWindow.Update();
             }
-            foreach (var frame in Frames)
-            {
-                frame.Update();
-            }
         }
 
         protected virtual void OnLateUpdate()
@@ -170,10 +224,6 @@ namespace EasyUI.Core
             if (MainWindow != null)
             {
                 MainWindow.LateUpdate();
-            }
-            foreach (var frame in Frames)
-            {
-                frame.LateUpdate();
             }
         }
     }
