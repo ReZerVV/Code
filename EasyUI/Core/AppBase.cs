@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using EasyUI.Core.Components;
 using EasyUI.Draw;
 
 namespace EasyUI.Core
@@ -6,29 +7,32 @@ namespace EasyUI.Core
     public abstract class AppBase
     {
         protected Canvas MainCanvas { get; set; }
-        protected readonly int FPS;
+        protected IComponent MainComponent { get; set; }
+        protected int FPS;
         protected bool IsOpenDebugInfo { get; set; }
-        protected List<string> Errors { get; set; } = new List<string>();
-        
+        protected List<string> Errors { get; set; } = new();
+
         private System.Timers.Timer fpsTimer;
         private Stopwatch fpsSynchronizationTimer;
         private int fps;
-        private List<int> fpsHistory = new List<int>();
+        private List<int> fpsHistory = new();
         private float frt;
-        private List<int> frtHistory = new List<int>();
+        private List<int> frtHistory = new();
 
-        public static WindowBase? MainWindow = null;
+        private Queue<ConsoleKeyInfo> eventQueue = new();
+
         public bool IsOpen { get; private set; }
 
         public AppBase(string title = "App (cyril project)")
         {
             Console.Title = title;
+            Initialize();
+        }
+
+        public void Initialize()
+        {
             MainCanvas = new Canvas(Console.WindowWidth, Console.WindowHeight, Color.Black);
-            if (MainWindow != null)
-            {
-                MainWindow.Size.x = MainCanvas.Width; 
-                MainWindow.Size.y = MainCanvas.Height;
-            }
+            MainComponent = null;
             IsOpen = true;
             IsOpenDebugInfo = false;
             FPS = 60;
@@ -104,18 +108,14 @@ namespace EasyUI.Core
             {
                 frtHistory.RemoveRange(0, frtHistory.Count - 40);
             }
-            MainCanvas.DrawText($"Frames per second: {fps}", 0, 0, Color.White, new Color(50, 50, 100));
-            MainCanvas.DrawText($"Frame rendering time: {frt:F2}", 0, 1, Color.White, new Color(50, 50, 100));
-            MainCanvas.DrawText($"Window size: {Console.WindowWidth}:{Console.WindowHeight}", 0, 2, Color.White, new Color(50, 50, 100));
+            MainCanvas.DrawText($"Frames per second: {fps}", 0, 0, Color.White, new Color(50, 50, 100), PixelStyle.StyleNone);
+            MainCanvas.DrawText($"Frame rendering time: {frt:F2}", 0, 1, Color.White, new Color(50, 50, 100), PixelStyle.StyleNone);
+            MainCanvas.DrawText($"Window size: {Console.WindowWidth}:{Console.WindowHeight}", 0, 2, Color.White, new Color(50, 50, 100), PixelStyle.StyleNone);
         }
 
         public void AppLoop()
         {
             Thread consoleInputThread = new Thread(ConsoleInput);
-            if (MainWindow == null)
-            {
-                Errors.Add($"MainWindow is null, no content to display");
-            }
             int fpsCounter = 0;
             fpsTimer.Elapsed += (sender, e) =>
             {
@@ -131,8 +131,12 @@ namespace EasyUI.Core
             {
                 fpsSynchronizationTimer.Restart();
                 {
+                    if (eventQueue.TryDequeue(out ConsoleKeyInfo keyInfo))
+                    {
+                        OnInput(keyInfo);
+                    }
                     OnUpdate();
-                    OnLateUpdate();
+                    OnLayout();
                     OnRender();
                 }
                 if (IsOpenDebugInfo)
@@ -150,11 +154,6 @@ namespace EasyUI.Core
                     MainCanvas.Height != Console.WindowHeight)
                 {
                     MainCanvas = new Canvas(Console.WindowWidth, Console.WindowHeight, Color.Black);
-                    if (MainWindow != null)
-                    {
-                        MainWindow.Size.x = MainCanvas.Width;
-                        MainWindow.Size.y = MainCanvas.Height;
-                    }
                 }
 
                 int timeSynchronizationSleep = (int)(0.5f / FPS * 1000.0f - fpsSynchronizationTimer.Elapsed.TotalMilliseconds);
@@ -177,15 +176,12 @@ namespace EasyUI.Core
                 if (Console.KeyAvailable)
                 {
                     var keyInfo = Console.ReadKey(intercept: true);
-                    if (keyInfo.Key == ConsoleKey.Escape)
-                    {
+                    if (keyInfo.Modifiers == ConsoleModifiers.Control && keyInfo.Key == ConsoleKey.X)
                         IsOpen = false;
-                    }
-                    if (keyInfo.Modifiers == ConsoleModifiers.Control && keyInfo.Key == ConsoleKey.I)
-                    {
+                    else if (keyInfo.Modifiers == ConsoleModifiers.Control && keyInfo.Key == ConsoleKey.I)
                         IsOpenDebugInfo = !IsOpenDebugInfo;
-                    }
-                    OnInput(keyInfo);
+                    else
+                        eventQueue.Enqueue(keyInfo);
                 }
             }
         }
@@ -197,33 +193,34 @@ namespace EasyUI.Core
 
         protected virtual void OnInput(ConsoleKeyInfo keyInfo)
         {
-            if (MainWindow != null)
+            if (MainComponent != null)
             {
-                MainWindow.Input(keyInfo);
-            }
-        }
-
-        protected virtual void OnRender()
-        {
-            if (MainWindow != null)
-            {
-                MainWindow.Render(MainCanvas);
+                MainComponent.Input(keyInfo);
             }
         }
 
         protected virtual void OnUpdate()
         {
-            if (MainWindow != null)
+            if (MainComponent != null)
             {
-                MainWindow.Update();
+                MainComponent.Update();
             }
         }
 
-        protected virtual void OnLateUpdate()
+        protected virtual void OnRender()
         {
-            if (MainWindow != null)
+            if (MainComponent != null)
             {
-                MainWindow.LateUpdate();
+                MainComponent.Render(MainCanvas);
+            }
+        }
+
+        protected virtual void OnLayout()
+        {
+            if (MainComponent != null)
+            {
+                MainComponent.Size = new Vector2(MainCanvas.Width, MainCanvas.Height);
+                MainComponent.Layout();
             }
         }
     }

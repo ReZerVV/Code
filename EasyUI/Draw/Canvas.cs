@@ -1,6 +1,4 @@
-﻿using System;
-using System.Drawing;
-using System.Text;
+﻿using System.Text;
 
 namespace EasyUI.Draw
 {
@@ -21,7 +19,7 @@ namespace EasyUI.Draw
             viewBuffer = new Pixel[Width * Height];
             for (int indexBuffer = 0; indexBuffer < Width * Height; indexBuffer++)
             {
-                viewBuffer[indexBuffer] = new Pixel();
+                viewBuffer[indexBuffer] = new Pixel() { Background = ClearColor };
             }
             Console.OutputEncoding = Encoding.UTF8;
             Console.CursorVisible = false;
@@ -34,13 +32,14 @@ namespace EasyUI.Draw
             {
                 if (indexBuffer != 0 &&
                     viewBuffer[indexBuffer].Foreground.Equals(viewBuffer[indexBuffer - 1].Foreground) &&
-                    viewBuffer[indexBuffer].Background.Equals(viewBuffer[indexBuffer - 1].Background))
+                    viewBuffer[indexBuffer].Background.Equals(viewBuffer[indexBuffer - 1].Background) &&
+                    viewBuffer[indexBuffer].Style.Equals(viewBuffer[indexBuffer - 1].Style))
                 {
                     stringBuffer.Append(viewBuffer[indexBuffer].Symbol);
                 }
                 else
                 {
-                    stringBuffer.Append($"\u001b[48;2;{viewBuffer[indexBuffer].Background.R};{viewBuffer[indexBuffer].Background.G};{viewBuffer[indexBuffer].Background.B}m\x1b[38;2;{viewBuffer[indexBuffer].Foreground.R};{viewBuffer[indexBuffer].Foreground.G};{viewBuffer[indexBuffer].Foreground.B}m{viewBuffer[indexBuffer].Symbol}");
+                    stringBuffer.Append($"\x1b[{viewBuffer[indexBuffer].Style.ToEscapeCodeString()}m\u001b[48;2;{viewBuffer[indexBuffer].Background.R};{viewBuffer[indexBuffer].Background.G};{viewBuffer[indexBuffer].Background.B}m\x1b[38;2;{viewBuffer[indexBuffer].Foreground.R};{viewBuffer[indexBuffer].Foreground.G};{viewBuffer[indexBuffer].Foreground.B}m{viewBuffer[indexBuffer].Symbol}");
                 }
             }
             Console.SetCursorPosition(0, 0);
@@ -166,23 +165,24 @@ namespace EasyUI.Draw
             }
         }
 
-        public void DrawSymbol(string symbol, int x, int y, Color foreground, Color background)
+        public void DrawSymbol(string symbol, int x, int y, Color foreground, Color background, PixelStyle style)
         {
-            if (symbol.Length != 1)
-            {
-                throw new Exception("Invalid symbol");
-            }
+            //if (symbol.Length != 1)
+            //{
+            //    throw new Exception("Invalid symbol");
+            //}
             if (IsValidCoords(x, y))
             {
                 int indexBuffer = CoordsToIndex(x, y);
 
+                viewBuffer[indexBuffer].Style = style;
                 viewBuffer[indexBuffer].Symbol = symbol;
                 viewBuffer[indexBuffer].Foreground = foreground;
                 viewBuffer[indexBuffer].Background = background;
             }
         }
 
-        public void DrawText(string text, int x, int y, Color foreground, Color background)
+        public void DrawText(string text, int x, int y, Color foreground, Color background, PixelStyle style)
         {
             for (int indexSymbol = 0; indexSymbol < text.Length; indexSymbol++, x++)
             {
@@ -190,7 +190,7 @@ namespace EasyUI.Draw
                 {
                     break;
                 }
-                DrawSymbol(text[indexSymbol].ToString(), x, y, foreground, background);
+                DrawSymbol(text[indexSymbol].ToString(), x, y, foreground, background, style);
             }
         }
 
@@ -201,13 +201,15 @@ namespace EasyUI.Draw
                 x,
                 y,
                 color,
-                background);
+                background,
+                PixelStyle.StyleNone);
             DrawSymbol(
                 "╮",
                 x + w - 1,
                 y,
                 color,
-                background);
+                background,
+                PixelStyle.StyleNone);
 
             for (int indexX = x + 1; indexX < x + w - 1; indexX++)
             {
@@ -216,14 +218,16 @@ namespace EasyUI.Draw
                     indexX,
                     y,
                     color,
-                    background);
+                    background,
+                    PixelStyle.StyleNone);
 
                 DrawSymbol(
                     "─",
                     indexX,
                     y + h - 1,
                     color,
-                    background);
+                    background,
+                    PixelStyle.StyleNone);
             }
             for (int indexY = y + 1; indexY < y + h - 1; indexY++)
             {
@@ -232,13 +236,15 @@ namespace EasyUI.Draw
                     x,
                     indexY,
                     color,
-                    background);
+                    background,
+                    PixelStyle.StyleNone);
                 DrawSymbol(
                     "│",
                     x + w - 1,
                     indexY,
                     color,
-                    background);
+                    background,
+                    PixelStyle.StyleNone);
             }
 
             DrawSymbol(
@@ -246,13 +252,15 @@ namespace EasyUI.Draw
                 x,
                 y + h - 1,
                 color,
-                background);
+                background,
+                PixelStyle.StyleNone);
             DrawSymbol(
                 "╯",
                 x + w - 1,
                 y + h - 1,
                 color,
-                background);
+                background,
+                PixelStyle.StyleNone);
         }
         
         public void DrawBorder(int x, int y, int w, int h, Color color, Color background)
@@ -262,13 +270,15 @@ namespace EasyUI.Draw
                 x,
                 y,
                 color,
-                background);
+                background,
+                PixelStyle.StyleNone);
             DrawSymbol(
                 "┐",
                 x + w - 1,
                 y,
                 color,
-                background);
+                background,
+                PixelStyle.StyleNone);
 
             for (int indexX = x + 1; indexX < x + w - 1; indexX++)
             {
@@ -277,14 +287,16 @@ namespace EasyUI.Draw
                     indexX,
                     y,
                     color,
-                    background);
+                    background,
+                    PixelStyle.StyleNone);
 
                 DrawSymbol(
                     "─",
                     indexX,
                     y + h - 1,
                     color,
-                    background);
+                    background,
+                    PixelStyle.StyleNone);
             }
             for (int indexY = y + 1; indexY < y + h - 1; indexY++)
             {
@@ -293,13 +305,15 @@ namespace EasyUI.Draw
                     x,
                     indexY,
                     color,
-                    background);
+                    background,
+                    PixelStyle.StyleNone);
                 DrawSymbol(
                     "│",
                     x + w - 1,
                     indexY,
                     color,
-                    background);
+                    background,
+                    PixelStyle.StyleNone);
             }
 
             DrawSymbol(
@@ -307,16 +321,18 @@ namespace EasyUI.Draw
                 x,
                 y + h - 1,
                 color,
-                background);
+                background,
+                PixelStyle.StyleNone);
             DrawSymbol(
                 "┘",
                 x + w - 1,
                 y + h - 1,
                 color,
-                background);
+                background,
+                PixelStyle.StyleNone);
         }
 
-        public void DrawUnicodeVerticalLine(int x, int y, int h, Color color, Color background)
+        public void DrawUnicodeVerticalLine(int x, int y, int h, Color color, Color background, PixelStyle style)
         {
             for (int indexY = y; indexY < y + h; indexY++) 
             {
@@ -325,11 +341,12 @@ namespace EasyUI.Draw
                     x,
                     indexY,
                     color,
-                    background);
+                    background,
+                    style);
             }
         }
 
-        public void DrawUnicodeHorizontalLine(int x, int y, int w, Color color, Color background)
+        public void DrawUnicodeHorizontalLine(int x, int y, int w, Color color, Color background, PixelStyle style)
         {
             for (int indexX = x; indexX < x + w; indexX++)
             {
@@ -338,7 +355,8 @@ namespace EasyUI.Draw
                     indexX,
                     y,
                     color,
-                    background);
+                    background,
+                    style);
             }
         }
         #endregion
