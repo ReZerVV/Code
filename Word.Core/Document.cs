@@ -33,9 +33,9 @@ namespace Word.Core
                 lineIndex -= PartOffset;
                 for (int partIndex = 0; partIndex < PartBuffer.Count; partIndex++)
                 {
-                    if (PartBuffer[partIndex].Buffer.Count - 1 < lineIndex)
+                    if (PartBuffer[partIndex].Buffer.Count < lineIndex)
                     {
-                        lineIndex -= PartBuffer[partIndex].Buffer.Count - 1;
+                        lineIndex -= PartBuffer[partIndex].Buffer.Count;
                     }
                     else
                     {
@@ -49,13 +49,14 @@ namespace Word.Core
                 lineIndex -= PartOffset;
                 for (int partIndex = 0; partIndex < PartBuffer.Count; partIndex++)
                 {
-                    if (PartBuffer[partIndex].Buffer.Count - 1 < lineIndex)
+                    if (PartBuffer[partIndex].Buffer.Count < lineIndex)
                     {
-                        lineIndex -= PartBuffer[partIndex].Buffer.Count - 1;
+                        lineIndex -= PartBuffer[partIndex].Buffer.Count;
                     }
                     else
                     {
                         PartBuffer[partIndex].Buffer[lineIndex] = value;
+                        return;
                     }
                 }
                 throw new IndexOutOfRangeException(nameof(lineIndex));
@@ -115,7 +116,7 @@ namespace Word.Core
                 int lineCount = PartBuffer.Min(part => part.BeginPartPosition);
                 foreach (DocumentPart docPart in PartBuffer)
                 {
-                    lineCount += docPart.SizePart;
+                    lineCount += docPart.Buffer.Count;
                 }
                 return lineCount;
             }

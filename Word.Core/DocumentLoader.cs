@@ -220,12 +220,17 @@ namespace Word.Core
                 {
                     return false;
                 }
-                if (!File.Exists(doc.GetPath()))
+
+                if (!File.Exists(doc.PathFrom))
                 {
-                    return false;
+                    using StreamWriter streamWriter1 = new StreamWriter(doc.GetPath());
+                    foreach (string line in doc.PartBuffer.SelectMany(part => part.Buffer))
+                        streamWriter1.WriteLine(line);
+                    doc.IsSaved = true;
+                    doc.IsLoadFromFile = true;
+                    doc.PathFrom = doc.GetPath();
+                    return true;
                 }
-                doc.IsLoadFromFile = true;
-                doc.PathFrom = doc.GetPath();
 
                 using StreamReader streamReader = new StreamReader(doc.PathFrom);
                 using StreamWriter streamWriter = new StreamWriter(doc.GetPath());
@@ -266,8 +271,10 @@ namespace Word.Core
                         streamWriter.WriteLine(line);
                     }
                 }
-
                 doc.IsSaved = true;
+                doc.IsLoadFromFile = true;
+                doc.PathFrom = doc.GetPath();
+
                 return true;
             }
             catch
