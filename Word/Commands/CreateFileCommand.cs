@@ -19,15 +19,15 @@ namespace Word.Commands
         {
             if (Args.Count != CountArgs)
             {
-                ApplicationCode.NotificationStore.Send(Notification.Error("Invalid command format"));
+                AppState.NotificationStore.Send(Notification.Error("Invalid command format"));
                 return;
             }
-            if (ApplicationCode.NavigationService.CurrentView is not DocumentTabComponent)
+            if (AppState.NavigationService.CurrentView is not DocumentTabComponent)
             {
-                ApplicationCode.NavigationService.Navigate(new DocumentTabComponent());
+                AppState.NavigationService.Navigate(new DocumentTabComponent());
             }
-            ApplicationCode.DocumentStore.CreateAndOpenDocument(Args[0]);
-            ApplicationCode.NotificationStore.Send(Notification.Info("Document created"));
+            AppState.DocumentStore.OpenDoc(new Core.Document(Args[0]));
+            AppState.NotificationStore.Send(Notification.Info("Document created"));
             Args = new();
         }
     }

@@ -16,18 +16,18 @@ namespace Word.Commands
         {
             if (Args.Count == 0)
             {
-                return ApplicationCode.DocumentStore.Documents
-                    .Select(document => document.Name)
+                return AppState.DocumentStore.Docs
+                    .Select(document => document.GetName())
                     .ToList();
             }
             if (Args.Count == 1)
             {
-                var document = ApplicationCode.DocumentStore.Documents
-                    .FirstOrDefault(document => document.Name == Args[0]);
+                var document = AppState.DocumentStore.Docs
+                    .FirstOrDefault(document => document.GetName() == Args[0]);
                 if (document != null &&
-                    document.Path != string.Empty)
+                    document.GetPath() != string.Empty)
                 {
-                    CountArgs = 1;
+                    return new() { document.GetPath() };
                 }
             }
             return new();
@@ -35,18 +35,15 @@ namespace Word.Commands
         
         public void Execute()
         {
-            var document = ApplicationCode.DocumentStore.Documents.First(document => document.Name.Equals(Args[0]));
+            var document = AppState.DocumentStore.Docs.First(document => document.GetName().Equals(Args[0]));
             if (document == null)
             {
-                ApplicationCode.NotificationStore.Send(Notification.Error("Document not found"));
+                AppState.NotificationStore.Send(Notification.Error("Document not found"));
                 return;
             }
-            if (document.Path == string.Empty)
-            {
-                document.Path = Args[1];
-            }
-            document.Save();
-            ApplicationCode.NotificationStore.Send(Notification.Info($"Saved the {document.Name} document"));
+            document.SetPath(Args[1]);
+            document.TrySave();
+            AppState.NotificationStore.Send(Notification.Info($"Saved the {document.GetName()} document"));
         }
     }
 }

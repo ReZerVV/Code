@@ -35,15 +35,15 @@ namespace Word.CustomComponents
             }
         }
 
-        public Color Foreground { get; set; } = ApplicationCode.Theme.StatusBarForeground;
-        public Color Background { get; set; } = ApplicationCode.Theme.StatusBarBackground;
+        public Color Foreground { get; set; } = AppState.Theme.StatusBarForeground;
+        public Color Background { get; set; } = AppState.Theme.StatusBarBackground;
 
         private Vector2? cursorPosition = null;
         private int? spaces = null;
         private string? syntaxTypeDocument = null;
+        private string? encodingDocument = null;
 
         private Notification? currentNotification = null;
-
         public int NotificationDelay { get; set; } = 200;
         private int notificationDelayIndex = 0;
         private AnimationComponent notificationComponent = new()
@@ -59,30 +59,38 @@ namespace Word.CustomComponents
 
         public void Update()
         {
-            if (ApplicationCode.DocumentStore.Current != null)
+            if (AppState.ThemeChanged)
             {
-                var documentTabComponent = ApplicationCode.NavigationService.CurrentView as DocumentTabComponent;
+                Foreground = AppState.Theme.StatusBarForeground;
+                Background = AppState.Theme.StatusBarBackground;
+            }
+
+            if (AppState.DocumentStore.CurrentDoc != null)
+            {
+                var documentTabComponent = AppState.NavigationService.CurrentView as DocumentTabComponent;
                 if (documentTabComponent != null)
                 {
                     cursorPosition = new Vector2(
-                        documentTabComponent.documentVeiwer.Editor.Cursor.Offset,
-                        documentTabComponent.documentVeiwer.Editor.Cursor.Line);
-                    spaces = documentTabComponent.documentVeiwer.Editor.TabSize;
+                        AppState.DocumentStore.Cursor.Offset,
+                        AppState.DocumentStore.Cursor.Line + 1);
+                    spaces = 4;
                 }
-                syntaxTypeDocument = ApplicationCode.DocumentStore.Current.Highlighter.LangName;
+                syntaxTypeDocument = AppState.DocumentStore.CurrentDoc.Marker.LangName;
+                encodingDocument = $"{AppState.DocumentStore.CurrentDoc.Encoding.EncodingName} ({AppState.DocumentStore.CurrentDoc.Encoding.CodePage})";
             }
             else 
             {
                 cursorPosition = null;
                 spaces = null;
                 syntaxTypeDocument = null;
+                encodingDocument = null;
             }
-            if (ApplicationCode.NotificationStore != null)
+            if (AppState.NotificationStore != null)
             {
                 notificationDelayIndex++;
                 if (notificationDelayIndex % NotificationDelay == 0)
                 {
-                    ApplicationCode.NotificationStore.Notifications.TryDequeue(out Notification? notification);
+                    AppState.NotificationStore.Notifications.TryDequeue(out Notification? notification);
                     currentNotification = notification;
                 }
                 notificationComponent.Update();
@@ -100,14 +108,6 @@ namespace Word.CustomComponents
                      currentNotification.Type == NotificationType.Error)
             {
                 notificationComponent.Foreground = new Color(255, 125, 125);
-            }
-
-            if (ApplicationCode.ThemeChanged)
-            {
-                Foreground = ApplicationCode.Theme.StatusBarForeground;
-                Background = ApplicationCode.Theme.StatusBarBackground;
-                notificationComponent.Foreground = ApplicationCode.Theme.StatusBarForeground;
-                notificationComponent.Background = ApplicationCode.Theme.StatusBarBackground;
             }
         }
 
@@ -136,6 +136,10 @@ namespace Word.CustomComponents
             if (syntaxTypeDocument != null)
             {
                 statusStr += $"  {syntaxTypeDocument}";
+            }
+            if (encodingDocument != null)
+            {
+                statusStr += $"  {encodingDocument}";
             }
             canvas.DrawText(
                 text: statusStr,

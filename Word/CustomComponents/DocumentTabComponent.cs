@@ -38,36 +38,39 @@ namespace Word.CustomComponents
             }
         }
 
-        public Color Foreground { get; set; } = ApplicationCode.Theme.Foreground;
-        public Color Background { get; set; } = ApplicationCode.Theme.Background;
-        public Color BackgroundDark { get; set; } = ApplicationCode.Theme.BackgroundDark;
+        public Color Foreground { get; set; } = AppState.Theme.Foreground;
+        public Color Background { get; set; } = AppState.Theme.Background;
+        public Color BackgroundDark { get; set; } = AppState.Theme.BackgroundDark;
 
         public void Input(ConsoleKeyInfo keyInfo)
         {
             if ((keyInfo.Modifiers & ConsoleModifiers.Control) != 0 &&
                 keyInfo.Key == ConsoleKey.End)
-                ApplicationCode.DocumentStore.MoveToNextDocument();
+                AppState.DocumentStore.MoveToNextDoc();
             if ((keyInfo.Modifiers & ConsoleModifiers.Control) != 0 &&
                 keyInfo.Key == ConsoleKey.Home)
-                ApplicationCode.DocumentStore.MoveToPrevDocument();
+                AppState.DocumentStore.MoveToPrevDoc();
             else
                 documentVeiwer.Input(keyInfo);
         }
 
         public void Update()
         {
-            if (ApplicationCode.DocumentStore.GetCurrentDocument() != documentVeiwer.Document)
+            if (AppState.ThemeChanged)
             {
-                documentVeiwer.Document = ApplicationCode.DocumentStore.GetCurrentDocument();
+                Foreground = AppState.Theme.Foreground;
+                Background = AppState.Theme.Background;
+                BackgroundDark = AppState.Theme.BackgroundDark;
+            }
+
+            if (AppState.DocumentStore.IsDocChanged ||
+                documentVeiwer.Doc == null)
+            {
+                documentVeiwer.Doc = AppState.DocumentStore.CurrentDoc;
+                documentVeiwer.Cursor = AppState.DocumentStore.Cursor;
+                AppState.DocumentStore.IsDocChanged = false;
             }
             documentVeiwer.Update();
-
-            if (ApplicationCode.ThemeChanged)
-            {
-                Foreground = ApplicationCode.Theme.Foreground;
-                Background = ApplicationCode.Theme.Background;
-                BackgroundDark = ApplicationCode.Theme.BackgroundDark;
-            }
         }
 
         public void Layout()
@@ -83,20 +86,21 @@ namespace Word.CustomComponents
 
         private void RenderTabBar(Canvas canvas)
         {
-            if (ApplicationCode.DocumentStore.GetCurrentDocument() == null)
+            if (documentVeiwer.Doc == null)
             {
                 return;
             }
-
+            
             canvas.DrawFillRect(
                 x: Position.x,
                 y: Position.y,
                 w: Size.x,
                 h: TabBarSize.y,
                 color: BackgroundDark);
-            for (int documentIndex = 0, xOffset = 0; documentIndex < ApplicationCode.DocumentStore.Documents.Count; documentIndex++, xOffset += TabBarSize.x)
+
+            for (int documentIndex = 0, xOffset = 0; documentIndex < AppState.DocumentStore.Docs.Count; documentIndex++, xOffset += TabBarSize.x)
             {
-                if (documentIndex == ApplicationCode.DocumentStore.CurrentIndex)
+                if (documentIndex == AppState.DocumentStore.CurrentIndex)
                 {
                     canvas.DrawFillRect(
                         x: Position.x + xOffset,
@@ -105,14 +109,14 @@ namespace Word.CustomComponents
                         h: TabBarSize.y,
                         color: Background);
                     canvas.DrawText(
-                        text: ApplicationCode.DocumentStore.Documents[documentIndex].Name.Length < TabBarSize.x - 2 
-                            ? ApplicationCode.DocumentStore.Documents[documentIndex].Name
-                            : ApplicationCode.DocumentStore.Documents[documentIndex].Name.Substring(0, TabBarSize.x - 5) + "...",
+                        text: AppState.DocumentStore.Docs[documentIndex].GetName().Length < TabBarSize.x - 2 
+                            ? AppState.DocumentStore.Docs[documentIndex].GetName()
+                            : AppState.DocumentStore.Docs[documentIndex].GetName().Substring(0, TabBarSize.x - 5) + "...",
                         x: Position.x + xOffset + 1,
                         y: Position.y,
                         foreground: Foreground,
                         background: Background,
-                        style: ApplicationCode.DocumentStore.Documents[documentIndex].IsSaved
+                        style: AppState.DocumentStore.Docs[documentIndex].IsSaved
                             ? PixelStyle.StyleNone
                             : PixelStyle.StyleItalic);
                     continue;
@@ -124,14 +128,14 @@ namespace Word.CustomComponents
                     h: TabBarSize.y,
                     color: BackgroundDark);
                 canvas.DrawText(
-                    text: ApplicationCode.DocumentStore.Documents[documentIndex].Name.Length < TabBarSize.x - 2
-                        ? ApplicationCode.DocumentStore.Documents[documentIndex].Name
-                        : ApplicationCode.DocumentStore.Documents[documentIndex].Name.Substring(0, TabBarSize.x - 5) + "...",
+                    text: AppState.DocumentStore.Docs[documentIndex].GetName().Length < TabBarSize.x - 2
+                        ? AppState.DocumentStore.Docs[documentIndex].GetName()
+                        : AppState.DocumentStore.Docs[documentIndex].GetName().Substring(0, TabBarSize.x - 5) + "...",
                     x: Position.x + xOffset + 1,
                     y: Position.y,
                     foreground: Foreground,
                     background: BackgroundDark,
-                    style: ApplicationCode.DocumentStore.Documents[documentIndex].IsSaved
+                    style: AppState.DocumentStore.Docs[documentIndex].IsSaved
                             ? PixelStyle.StyleDim
                             : new PixelStyle { Dim = true, Italic = true });
             }

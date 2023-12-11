@@ -10,6 +10,8 @@ namespace Word.CustomComponents
     {
         public ICommand Command = null;
         private List<string> help = new();
+        private int helpListOffset = 0;
+        private int helpListHeight = 20;
 
         private int selectedIndex = -1;
         private InputComponent inputComponent = new()
@@ -118,7 +120,7 @@ namespace Word.CustomComponents
             {
                 if (selectedIndex >= 0 && selectedIndex < help.Count)
                 {
-                    Command = ApplicationCode.CommandService.GetByName(help[selectedIndex]);
+                    Command = AppState.CommandService.GetByName(help[selectedIndex]);
                     if (Command == null && !Command.HasArgs)
                     {
                         Command.Execute();
@@ -170,22 +172,35 @@ namespace Word.CustomComponents
             {
                 if (Command != null)
                 {
-                    help = Command.Help();
+                    if (Text == string.Empty)
+                    {
+                        help = Command.Help();
+                    }
+                    else
+                    {
+                        help = Command.Help()
+                            .Where(h => h.Contains(Text))
+                            .ToList();
+                    }
                 }
                 else
                 {
-                    help = ApplicationCode.CommandService.Search(Text);
+                    help = AppState.CommandService.Search(Text);
                 }
             }
             if (selectedIndex >= help.Count)
             {
                 selectedIndex = -1;
+                helpListOffset = 0;
             }
-            if (ApplicationCode.ThemeChanged)
+            if (selectedIndex != -1 && 
+                selectedIndex < helpListOffset)
             {
-                Foreground = ApplicationCode.Theme.Foreground;
-                Background = ApplicationCode.Theme.BackgroundDark;
-                SelectCommandColor = ApplicationCode.Theme.CommandLineBarSelectColor;
+                helpListOffset--;
+            }
+            if (selectedIndex >= helpListOffset + helpListHeight)
+            {
+                helpListOffset++;
             }
         }
 
@@ -198,30 +213,56 @@ namespace Word.CustomComponents
         {
             if (IsChanged)
             {
-                canvas.DrawRoundedBorder(
-                    x: Position.x,
-                    y: Position.y,
-                    w: Size.x,
-                    h: help.Count + 3,
-                    color: Foreground,
-                    background: Background);
-                if (help.Count != 0)
+                if (help.Count >= helpListHeight)
                 {
-                    canvas.DrawFillRect(
-                        x: Position.x + 1,
-                        y: Position.y + 2,
-                        w: Size.x - 2,
-                        h: help.Count,
-                        color: Background);
+                    canvas.DrawRoundedBorder(
+                        x: Position.x,
+                        y: Position.y,
+                        w: Size.x,
+                        h: helpListHeight + 3,
+                        color: Foreground,
+                        background: Background);
+                    if (help.Count != 0)
+                    {
+                        canvas.DrawFillRect(
+                            x: Position.x + 1,
+                            y: Position.y + 2,
+                            w: Size.x - 2,
+                            h: helpListHeight,
+                            color: Background);
+                    }
+                }
+                else
+                {
+                    canvas.DrawRoundedBorder(
+                        x: Position.x,
+                        y: Position.y,
+                        w: Size.x,
+                        h: help.Count + 3,
+                        color: Foreground,
+                        background: Background);
+                    if (help.Count != 0)
+                    {
+                        canvas.DrawFillRect(
+                            x: Position.x + 1,
+                            y: Position.y + 2,
+                            w: Size.x - 2,
+                            h: help.Count,
+                            color: Background);
+                    }
                 }
                 inputComponent.Render(canvas);
-                for (int commandIndex = 0; commandIndex < help.Count; commandIndex++)
+                for (int commandIndex = helpListOffset; commandIndex < help.Count; commandIndex++)
                 {
+                    if (commandIndex >= helpListOffset + helpListHeight)
+                    {
+                        break;
+                    }
                     if (commandIndex == selectedIndex) 
                     {
                         canvas.DrawFillRect(
                             x: Position.x + 1,
-                            y: Position.y + commandIndex + 2,
+                            y: Position.y + commandIndex + 2 - helpListOffset,
                             w: Size.x - 2,
                             h: 1,
                             color: SelectCommandColor);
@@ -230,7 +271,7 @@ namespace Word.CustomComponents
                                 ? "▶ " + help[commandIndex]
                                 : "▶ " + help[commandIndex].Substring(0, Size.x - 7) + "...",
                             x: Position.x + 1,
-                            y: Position.y + commandIndex + 2,
+                            y: Position.y + commandIndex + 2 - helpListOffset,
                             foreground: Foreground,
                             background: SelectCommandColor,
                             style: PixelStyle.StyleNone);
@@ -241,7 +282,7 @@ namespace Word.CustomComponents
                             ? help[commandIndex]
                             : help[commandIndex].Substring(0, Size.x - 5) + "...",
                         x: Position.x + 1,
-                        y: Position.y + commandIndex + 2,
+                        y: Position.y + commandIndex + 2 - helpListOffset,
                         foreground: Foreground,
                         background: Background,
                         style: PixelStyle.StyleNone);

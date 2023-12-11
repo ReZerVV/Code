@@ -94,25 +94,25 @@ namespace Word.Views
 
         public MainView()
         {
-            Foreground = ApplicationCode.Theme.Foreground;
-            Background = ApplicationCode.Theme.Background;
-            BackgroundDark = ApplicationCode.Theme.BackgroundDark;
-            commandLineBar.SelectCommandColor = ApplicationCode.Theme.CommandLineBarSelectColor;
+            Foreground = AppState.Theme.Foreground;
+            Background = AppState.Theme.Background;
+            BackgroundDark = AppState.Theme.BackgroundDark;
+            commandLineBar.SelectCommandColor = AppState.Theme.CommandLineBarSelectColor;
         }
 
         private void NewDocument()
         {
             if (CurrentView is not DocumentTabComponent)
             {
-                ApplicationCode.NavigationService.Navigate(new DocumentTabComponent());
+                AppState.NavigationService.Navigate(new DocumentTabComponent());
             }
-            ApplicationCode.DocumentStore.CreateAndOpenDocument("New File");
+            AppState.DocumentStore.OpenDoc(new Core.Document());
         }
 
         private void CloseDocument()
         {
-            ApplicationCode.DocumentStore.CloseDocument();
-            if (ApplicationCode.DocumentStore.Current == null)
+            AppState.DocumentStore.CloseDoc();
+            if (AppState.DocumentStore.CurrentDoc == null)
             {
                 CurrentView = null;
             }
@@ -120,31 +120,31 @@ namespace Word.Views
 
         private void RenameDocument()
         {
-            if (ApplicationCode.DocumentStore.Current == null)
+            if (AppState.DocumentStore.CurrentDoc == null)
             {
                 return;
             }
-            var command = ApplicationCode.CommandService.GetByName("Rename File");
-            command.Args.Add(ApplicationCode.DocumentStore.Current.Name);
+            var command = AppState.CommandService.GetByName("Rename File");
+            command.Args.Add(AppState.DocumentStore.CurrentDoc.GetName());
             commandLineBar.IsChanged = true;
             commandLineBar.Command = command;
         }
 
         private void SaveDocument()
         {
-            if (ApplicationCode.DocumentStore.Current == null)
+            if (AppState.DocumentStore.CurrentDoc == null)
             {
                 return;
             }
-            var command = ApplicationCode.CommandService.GetByName("Save File");
-            command.Args.Add(ApplicationCode.DocumentStore.Current.Name);
+            var command = AppState.CommandService.GetByName("Save File");
+            command.Args.Add(AppState.DocumentStore.CurrentDoc.GetName());
             commandLineBar.IsChanged = true;
             commandLineBar.Command = command;
         }
 
         private void OpenDocument()
         {
-            var command = ApplicationCode.CommandService.GetByName("Open File");
+            var command = AppState.CommandService.GetByName("Open File");
             commandLineBar.IsChanged = true;
             commandLineBar.Command = command;
         }
@@ -178,28 +178,29 @@ namespace Word.Views
 
         public void Update()
         {
-            if (ApplicationCode.NavigationService.IsViewChanged)
+            if (AppState.ThemeChanged)
             {
-                CurrentView = ApplicationCode.NavigationService.CurrentView;
+                Foreground = AppState.Theme.Foreground;
+                Background = AppState.Theme.Background;
+                BackgroundDark = AppState.Theme.BackgroundDark;
+                commandLineBar.SelectCommandColor = AppState.Theme.CommandLineBarSelectColor;
+            }
+
+            if (AppState.NavigationService.IsViewChanged)
+            {
+                CurrentView = AppState.NavigationService.CurrentView;
                 Position = Vector2.Zero;
-                ApplicationCode.NavigationService.IsViewChanged = false;
+                AppState.NavigationService.IsViewChanged = false;
             }
             if (CurrentView == null)
             {
-                ApplicationCode.NavigationService.Navigate(new WelcomeView());
+                AppState.NavigationService.Navigate(new WelcomeView());
                 Update();
             }
+            
             commandLineBar.Update();
             CurrentView.Update();
             statusBar.Update();
-
-            if (ApplicationCode.ThemeChanged)
-            {
-                Foreground = ApplicationCode.Theme.Foreground;
-                Background = ApplicationCode.Theme.Background;
-                BackgroundDark = ApplicationCode.Theme.BackgroundDark;
-                commandLineBar.SelectCommandColor = ApplicationCode.Theme.CommandLineBarSelectColor;
-            }
         }
 
         public void Layout()

@@ -1,21 +1,24 @@
-﻿using System.Reflection;
+﻿using System.Data;
+using System.Reflection;
 using Word.Commands;
 
 namespace Word.Services
 {
     public class CommandService
     {
+        public static List<ICommand> Commands => GetCommands();
+
+        public static List<ICommand> GetCommands()
+        {
+            return Assembly.GetExecutingAssembly().GetTypes()
+                .Where(type => typeof(ICommand).IsAssignableFrom(type) && type.IsClass && !type.IsAbstract)
+                .Select(type => (ICommand)Activator.CreateInstance(type))
+                .ToList();
+        }
+
         public List<string> Search(string commandName)
         {
-            var commandTypes = Assembly.GetExecutingAssembly().GetTypes();
-            var commandImplementations = commandTypes
-                .Where(type => typeof(ICommand).IsAssignableFrom(type) && type.IsClass && !type.IsAbstract);
-            var commands = new List<ICommand>();
-            foreach (var commandType in commandImplementations)
-            {
-                commands.Add((ICommand)Activator.CreateInstance(commandType));
-            }
-            return commands
+            return Commands
                 .Where(command => command.Name.ToUpper().Contains(commandName.ToUpper()))
                 .Select(command => command.Name)
                 .ToList();
@@ -23,15 +26,7 @@ namespace Word.Services
 
         public ICommand GetByName(string commandName)
         {
-            var commandTypes = Assembly.GetExecutingAssembly().GetTypes();
-            var commandImplementations = commandTypes
-                .Where(type => typeof(ICommand).IsAssignableFrom(type) && type.IsClass && !type.IsAbstract);
-            var commands = new List<ICommand>();
-            foreach (var commandType in commandImplementations)
-            {
-                commands.Add((ICommand)Activator.CreateInstance(commandType));
-            }
-            return commands
+            return Commands
                 .Where(command => command.Name.ToUpper().Contains(commandName.ToUpper()))
                 .Single();
         }

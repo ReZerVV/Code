@@ -6,9 +6,9 @@ namespace Word.Views
 {
     public class WelcomeView : IComponent
     {
-        public Color Foreground { get; set; } = ApplicationCode.Theme.Foreground;
-        public Color Background { get; set; } = ApplicationCode.Theme.Background;
-        public Color BackgroundDark { get; set; } = ApplicationCode.Theme.BackgroundDark;
+        public Color Foreground { get; set; } = AppState.Theme.Foreground;
+        public Color Background { get; set; } = AppState.Theme.Background;
+        public Color BackgroundDark { get; set; } = AppState.Theme.BackgroundDark;
 
         public Vector2 Position { get; set; } = Vector2.Zero;
         public Vector2 Size { get; set; } = Vector2.Zero;
@@ -21,11 +21,11 @@ namespace Word.Views
 
         public void Update()
         {
-            if (ApplicationCode.ThemeChanged)
+            if (AppState.ThemeChanged)
             {
-                Foreground = ApplicationCode.Theme.Foreground;
-                Background = ApplicationCode.Theme.Background;
-                BackgroundDark = ApplicationCode.Theme.BackgroundDark;
+                Foreground = AppState.Theme.Foreground;
+                Background = AppState.Theme.Background;
+                BackgroundDark = AppState.Theme.BackgroundDark;
             }
         }
 

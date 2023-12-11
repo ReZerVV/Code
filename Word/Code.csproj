@@ -8,7 +8,8 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EasyUI\EasyUI.csproj" />
+    <ProjectReference Include="..\EasyUI\Code.Drawing.csproj" />
+    <ProjectReference Include="..\Word.Core\Code.Core.csproj" />
   </ItemGroup>
 
 </Project>

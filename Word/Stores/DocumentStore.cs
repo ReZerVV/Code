@@ -4,23 +4,23 @@ namespace Word.Stores
 {
     public class DocumentStore
     {
-        public List<Document> Documents { get; set; } = new();
-        
+        public List<Document> Docs { get; set; } = new List<Document>();
+        public bool IsDocChanged { get; set; } = false;
+        public Document? CurrentDoc { get; set; } = null;
         public int CurrentIndex { get; set; } = 0;
-        public Document Current => GetCurrentDocument();
-        
-        public Document? GetCurrentDocument()
+        public Document? GetCurrentDoc()
         {
-            if (CurrentIndex < 0 || CurrentIndex >= Documents.Count)
+            if (CurrentIndex < 0 || CurrentIndex >= Docs.Count)
             {
                 return null;
             }
-            return Documents[CurrentIndex];
+            return Docs[CurrentIndex];
         }
+        public DocumentCursor Cursor { get; set; }
 
-        public void MoveToNextDocument()
+        public void MoveToNextDoc()
         {
-            if (CurrentIndex + 1 < Documents.Count)
+            if (CurrentIndex + 1 < Docs.Count)
             {
                 CurrentIndex++;
             }
@@ -28,9 +28,11 @@ namespace Word.Stores
             {
                 CurrentIndex = 0;
             }
+            CurrentDoc = GetCurrentDoc();
+            Cursor = new DocumentCursor(CurrentDoc);
+            IsDocChanged = true;
         }
-
-        public void MoveToPrevDocument()
+        public void MoveToPrevDoc()
         {
             if (CurrentIndex - 1 >= 0)
             {
@@ -38,32 +40,33 @@ namespace Word.Stores
             }
             else
             {
-                CurrentIndex = Documents.Count - 1;
+                CurrentIndex = Docs.Count - 1;
             }
+            CurrentDoc = GetCurrentDoc();
+            Cursor = new DocumentCursor(CurrentDoc);
+            IsDocChanged = true;
         }
 
-        public void CreateAndOpenDocument(string name)
+        public void OpenDoc(Document doc)
         {
-            OpenDocument(new Document(name));
+            Docs.Add(doc);
+            CurrentDoc = doc;
+            CurrentIndex = Docs.Count - 1;
+            Cursor = new DocumentCursor(doc);
+            IsDocChanged = true;
         }
-
-        public void OpenDocument(Document document)
+        public void CloseDoc()
         {
-            Documents.Add(document);
-            CurrentIndex = Documents.Count - 1;
+            Docs.Remove(GetCurrentDoc());
+            CurrentIndex = Docs.Count - 1;
+            CurrentDoc = GetCurrentDoc();
+            IsDocChanged = true;
         }
-        
-        public void CloseDocument()
+        public void LoadDoc(string path)
         {
-            Documents.Remove(Current);
-            CurrentIndex = Documents.Count - 1;
-        }
-
-        public void LoadDocument(string path)
-        {
-            Document document = new Document(string.Empty);
-            document.Load(path);
-            OpenDocument(document);
+            Document doc = new Document(string.Empty);
+            doc.SetPath(path);
+            OpenDoc(doc);
         }
     }
 }

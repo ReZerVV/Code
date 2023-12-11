@@ -13,8 +13,8 @@ namespace Word.Commands
         {
             if (Args.Count == 0)
             {
-                return ApplicationCode.DocumentStore.Documents
-                    .Select(document => document.Name)
+                return AppState.DocumentStore.Docs
+                    .Select(document => document.GetName())
                     .ToList();
             }
             return new();
@@ -24,16 +24,16 @@ namespace Word.Commands
         {
             if (Args.Count != 2)
             {
-                ApplicationCode.NotificationStore.Send(Notification.Error("Invalid command format"));
+                AppState.NotificationStore.Send(Notification.Error("Invalid command format"));
                 return;
             }
-            if (!ApplicationCode.DocumentStore.Documents.Any(document => document.Name.Equals(Args[0])))
+            if (!AppState.DocumentStore.Docs.Any(document => document.GetName().Equals(Args[0])))
             {
-                ApplicationCode.NotificationStore.Send(Notification.Error("Document not found"));
+                AppState.NotificationStore.Send(Notification.Error("Document not found"));
                 return;
             }
-            ApplicationCode.DocumentStore.Documents.First(document => document.Name.Equals(Args[0])).Name = Args[1];
-            ApplicationCode.NotificationStore.Send(Notification.Info("Document renamed"));
+            AppState.DocumentStore.Docs.First(document => document.GetName().Equals(Args[0])).SetName(Args[1]);
+            AppState.NotificationStore.Send(Notification.Info("Document renamed"));
             Args = new();
         }
     }
