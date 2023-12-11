@@ -66,6 +66,7 @@ namespace Word.Stores
         {
             Document doc = new Document(string.Empty);
             doc.SetPath(path);
+            doc.TryLoad();
             OpenDoc(doc);
         }
     }

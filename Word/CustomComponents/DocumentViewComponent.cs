@@ -17,7 +17,7 @@ namespace Word.CustomComponents
         public Color Foreground { get; set; } = AppState.Theme.Foreground;
         public Color Background { get; set; } = AppState.Theme.Background;
         public Color BackgroundDark { get; set; } = AppState.Theme.BackgroundDark;
-        
+
         public Color NumberingStripForeground { get; set; } = AppState.Theme.NumberingStripForeground;
         public Color NumberingStripBackground { get; set; } = AppState.Theme.NumberingStripBackground;
 
@@ -46,7 +46,7 @@ namespace Word.CustomComponents
             else
                 Doc.InsertText(keyInfo.KeyChar.ToString(), Cursor);
         }
-        
+
         public void Update()
         {
             if (AppState.ThemeChanged)
@@ -84,10 +84,10 @@ namespace Word.CustomComponents
                 color: NumberingStripBackground);
 
             Canvas documentCanvas = new Canvas(
-                Doc.PartBuffer.SelectMany(part => part.Buffer).Max(line => line.Length) + 1,
-                Doc.PartBuffer.SelectMany(part => part.Buffer).ToList().Count, Background
+                Doc.Buffer.Max(line => line.Length) + 1,
+                Doc.Buffer.Count, Background
             );
-            
+
             var markupText = Doc.Markup();
             for (int markupTextIndex = 0, linePosition = 0;
                 markupTextIndex < markupText.Count;
@@ -127,9 +127,9 @@ namespace Word.CustomComponents
                 if (markupTextIndex == Cursor.Line)
                 {
                     documentCanvas.DrawSymbol(
-                        symbol: Cursor.Offset >= Doc[Cursor.Line].Length
+                        symbol: Cursor.Offset >= Doc.Buffer[Cursor.Line].Length
                             ? " "
-                            : Doc[markupTextIndex][Cursor.Offset].ToString(),
+                            : Doc.Buffer[markupTextIndex][Cursor.Offset].ToString(),
                         x: Cursor.Offset,
                         y: linePosition,
                         foreground: Background,

@@ -34,16 +34,16 @@ namespace Word.Core
         public DocumentCursor(Document doc, int partSize = 10)
         {
             Doc = doc;
-            
+
             Offset = 0;
             Line = 0;
-            
+
             DocXOffset = 0;
             DocYOffset = 0;
 
             ScreenWidth = 0;
             ScreenHeight = 0;
-            
+
             PartOffset = 0;
             PartSize = partSize;
         }
@@ -66,7 +66,7 @@ namespace Word.Core
             }
             else if (TryMoveUp())
             {
-                Offset = Doc[Line].Length;
+                Offset = Doc.Buffer[Line].Length;
                 return true;
             }
             return false;
@@ -78,7 +78,7 @@ namespace Word.Core
             {
                 return false;
             }
-            if (Offset + step <= Doc[Line].Length)
+            if (Offset + step <= Doc.Buffer[Line].Length)
             {
                 Offset += step;
                 if (Offset < DocXOffset)
@@ -104,9 +104,13 @@ namespace Word.Core
             if (Line - step >= 0)
             {
                 Line -= step;
-                if (Offset > Doc[Line].Length)
+                if (Line < DocYOffset)
                 {
-                    Offset = Doc[Line].Length;
+                    DocYOffset--;
+                }
+                if (Offset > Doc.Buffer[Line].Length)
+                {
+                    Offset = Doc.Buffer[Line].Length;
                 }
                 return true;
             }
@@ -119,12 +123,16 @@ namespace Word.Core
             {
                 return false;
             }
-            if (Line + step < Doc.GetDocumentSize())
+            if (Line + step < Doc.Buffer.Count)
             {
                 Line += step;
-                if (Offset > Doc[Line].Length)
+                if (Line > DocYOffset + ScreenHeight - 1)
                 {
-                    Offset = Doc[Line].Length;
+                    DocYOffset++;
+                }
+                if (Offset > Doc.Buffer[Line].Length)
+                {
+                    Offset = Doc.Buffer[Line].Length;
                 }
                 return true;
             }
@@ -147,7 +155,7 @@ namespace Word.Core
             {
                 return false;
             }
-            Offset = doc[Line].Length;
+            Offset = Doc.Buffer[Line].Length;
             return true;
         }
     }
