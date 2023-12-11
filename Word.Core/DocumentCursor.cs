@@ -48,11 +48,6 @@ namespace Word.Core
             PartSize = partSize;
         }
 
-        public int GetLineIndex()
-        {
-            return Line - PartOffset;
-        }
-
         public bool TryMoveLeft(int step = 1)
         {
             if (Doc == null)
@@ -71,7 +66,7 @@ namespace Word.Core
             }
             else if (TryMoveUp())
             {
-                Offset = Doc.Buffer[GetLineIndex()].Length;
+                Offset = Doc[Line].Length;
                 return true;
             }
             return false;
@@ -83,7 +78,7 @@ namespace Word.Core
             {
                 return false;
             }
-            if (Offset + step <= Doc.Buffer[GetLineIndex()].Length)
+            if (Offset + step <= Doc[Line].Length)
             {
                 Offset += step;
                 if (Offset < DocXOffset)
@@ -109,21 +104,9 @@ namespace Word.Core
             if (Line - step >= 0)
             {
                 Line -= step;
-                if (GetLineIndex() < DocYOffset)
+                if (Offset > Doc[Line].Length)
                 {
-                    DocYOffset--;
-                    if (DocYOffset == 0 &&
-                        Line != 0)
-                    {
-                        PartOffset -= PartSize;
-                        DocYOffset = PartSize;
-                    }
-                    Doc.PartOffset = PartOffset;
-                    LoadDocByOffset();
-                }
-                if (Offset > Doc.Buffer[GetLineIndex()].Length)
-                {
-                    Offset = Doc.Buffer[GetLineIndex()].Length;
+                    Offset = Doc[Line].Length;
                 }
                 return true;
             }
@@ -136,23 +119,12 @@ namespace Word.Core
             {
                 return false;
             }
-            if (Line + step < Doc.GetTotalLineCount())
+            if (Line + step < Doc.GetDocumentSize())
             {
                 Line += step;
-                if (GetLineIndex() > DocYOffset + ScreenHeight - 1)
+                if (Offset > Doc[Line].Length)
                 {
-                    DocYOffset++;
-                    if (DocYOffset % PartSize == 0)
-                    {
-                        PartOffset += PartSize;
-                        DocYOffset = 0;
-                    }
-                    Doc.PartOffset = PartOffset;
-                    LoadDocByOffset();
-                }
-                if (Offset > Doc.Buffer[GetLineIndex()].Length)
-                {
-                    Offset = Doc.Buffer[GetLineIndex()].Length;
+                    Offset = Doc[Line].Length;
                 }
                 return true;
             }
@@ -175,29 +147,8 @@ namespace Word.Core
             {
                 return false;
             }
-            Offset = doc.Buffer[GetLineIndex()].Length;
+            Offset = doc[Line].Length;
             return true;
-        }
-
-        public void LoadDocByOffset()
-        {
-            int partLoadingCount = 0;
-            int totalLineCount = Doc.GetTotalLineCount();
-            for (int partIndex = 0;
-                partIndex < Math.Ceiling((decimal)totalLineCount / (decimal)PartSize);
-                partIndex++)
-            {
-                if ((partIndex * PartSize > DocYOffset &&
-                    partIndex * PartSize < DocYOffset + ScreenHeight) ||
-                    (partIndex * PartSize + PartSize > DocYOffset &&
-                    partIndex * PartSize + PartSize < DocYOffset + ScreenHeight))
-                {
-                    partLoadingCount++;
-                }
-            }
-            Doc.TryLoadFilePart(
-                PartOffset,
-                partLoadingCount * PartSize);
         }
     }
 }

@@ -1,23 +1,70 @@
-﻿using System.IO;
-using System.Runtime.CompilerServices;
+﻿using Code.Core;
 
 namespace Word.Core
 {
     // Helper for loading document
     public static class DocumentLoader
     {
+        public static int GetCountLinesFromFile(Document doc)
+        {
+            try
+            {
+                int lineCount = 0;
+
+                using StreamReader streamReader = new StreamReader(doc.PathFrom);
+
+                {
+                    for (int lineIndex = 0; lineIndex < doc.PartOffset; lineIndex++, lineCount++)
+                    {
+                        if (!TryReadLine(streamReader, out string line))
+                        {
+                            throw new OutOfMemoryException();
+                        }
+                    }
+                }
+
+                {
+                    foreach (DocumentPart docPart in doc.PartBuffer)
+                    {
+                        for (int lineIndex = 0; lineIndex < docPart.Buffer.Count; lineIndex++, lineCount++)
+                        {
+                            if (lineIndex < docPart.SizePart && !TryReadLine(streamReader, out string tempLine))
+                            {
+                                throw new OutOfMemoryException();
+                            }
+                        }
+                    }
+                }
+
+                {
+                    while (TryReadLine(streamReader, out string line))
+                    {
+                        lineCount++;
+                    }
+                }
+
+                return lineCount;
+            }
+            catch
+            {
+                return 0;
+            }
+        }
+        public const int PartSize = 50;
         public static Document LoadFilePart(string path, int start, int count)
         {
             // Create and init path property for new document
             Document doc = new Document();
             doc.SetPath(path);
+            doc.IsLoadFromFile = true;
+            doc.PathFrom = path;
 
             // Checking the existence of a file along a path
             if (!File.Exists(doc.GetPath()))
             {
                 throw new FileNotFoundException();
             }
-            using StreamReader fileStreamReader = new StreamReader(doc.GetPath());
+            using StreamReader fileStreamReader = new StreamReader(doc.PathFrom);
 
             // Update properties
             doc.Clear();
@@ -35,9 +82,14 @@ namespace Word.Core
             // Read lines from file
             for (int lineIndex = 0; lineIndex < count; lineIndex++)
             {
+                if (lineIndex % PartSize == 0)
+                {
+                    doc.PartBuffer.Add(new DocumentPart(start));
+                }
                 if (TryReadLine(fileStreamReader, out string tempLine))
                 {
-                    doc.Buffer.Add(tempLine);
+                    doc.PartBuffer.Last().Buffer.Add(tempLine);
+                    doc.PartBuffer.Last().SizePart++;
                 }
                 else
                 {
@@ -52,11 +104,12 @@ namespace Word.Core
         {
             try
             {
+                doc.IsLoadFromFile = true;
                 if (!File.Exists(doc.GetPath()))
                 {
                     throw new FileNotFoundException();
                 }
-                using StreamReader fileStreamReader = new StreamReader(doc.GetPath());
+                using StreamReader fileStreamReader = new StreamReader(doc.PathFrom);
 
                 // Update properties
                 doc.Clear();
@@ -74,9 +127,14 @@ namespace Word.Core
                 // Read lines from file
                 for (int lineIndex = 0; lineIndex < count; lineIndex++)
                 {
+                    if (lineIndex % PartSize == 0)
+                    {
+                        doc.PartBuffer.Add(new DocumentPart(start));
+                    }
                     if (TryReadLine(fileStreamReader, out string tempLine))
                     {
-                        doc.Buffer.Add(tempLine);
+                        doc.PartBuffer.Last().Buffer.Add(tempLine);
+                        doc.PartBuffer.Last().SizePart++;
                     }
                     else
                     {
@@ -97,14 +155,16 @@ namespace Word.Core
             {
                 // Create and init path property for new document
                 doc = new Document();
+                doc.IsLoadFromFile = true;
                 doc.SetPath(path);
+                doc.PathFrom = path;
 
                 // Checking the existence of a file along a path
                 if (!File.Exists(doc.GetPath()))
                 {
                     throw new FileNotFoundException();
                 }
-                using StreamReader fileStreamReader = new StreamReader(doc.GetPath());
+                using StreamReader fileStreamReader = new StreamReader(doc.PathFrom);
 
                 // Update properties
                 doc.Clear();
@@ -122,16 +182,20 @@ namespace Word.Core
                 // Read lines from file
                 for (int lineIndex = 0; lineIndex < count; lineIndex++)
                 {
+                    if (lineIndex % PartSize == 0)
+                    {
+                        doc.PartBuffer.Add(new DocumentPart(start));
+                    }
                     if (TryReadLine(fileStreamReader, out string tempLine))
                     {
-                        doc.Buffer.Add(tempLine);
+                        doc.PartBuffer.Last().Buffer.Add(tempLine);
+                        doc.PartBuffer.Last().SizePart++;
                     }
                     else
                     {
                         break;
                     }
                 }
-
                 return true;
             }
             catch
@@ -148,81 +212,6 @@ namespace Word.Core
             return (line = fileStreamReader.ReadLine()) != null;
         }
 
-        public static int GetLineCountFromFile(string path)
-        {
-            // Checking the existence of a file along a path
-            if (!File.Exists(path))
-            {
-                throw new FileNotFoundException();
-            }
-
-            using StreamReader fileStreamReader = new StreamReader(path);
-
-            // Calc line count
-            int size = 0;
-            for (; TryReadLine(fileStreamReader, out string tempLine); size++) { }
-
-            return size;
-        }
-
-        public static int GetLineCountFromFile(Document doc)
-        {
-            // Checking the existence of a file along a path
-            if (!File.Exists(doc.GetPath()))
-            {
-                throw new FileNotFoundException();
-            }
-
-            using StreamReader fileStreamReader = new StreamReader(doc.GetPath());
-            
-            
-            // Calc line count
-            int size = 0;
-            for (; TryReadLine(fileStreamReader, out string tempLine); size++) { }
-
-            return size;
-        }
-
-        public static bool TryGetLineCountFromFile(Document doc, out int size)
-        {
-            // Checking the existence of a file along a path
-            if (!File.Exists(doc.GetPath()))
-            {
-                size = 0;
-                return false;
-            }
-
-            using StreamReader fileStreamReader = new StreamReader(doc.GetPath());
-
-
-            // Calc line count
-            size = 0;
-            for (; TryReadLine(fileStreamReader, out string tempLine); size++) { }
-
-            return true;
-        }
-
-        public static bool TrySave(Document doc, string path)
-        {
-            try
-            {
-                doc.SetPath(path);
-                using StreamWriter streamWriter = new StreamWriter(
-                    stream: new FileStream(doc.GetPath(), FileMode.OpenOrCreate,  FileAccess.Write),
-                    encoding: doc.Encoding);
-                foreach (string line in doc.Buffer)
-                {
-                    streamWriter.WriteLine(line);
-                }
-                doc.IsSaved = true;
-                return true;
-            }
-            catch
-            {
-                return false;
-            }
-        }
-
         public static bool TrySave(Document doc)
         {
             try
@@ -235,12 +224,13 @@ namespace Word.Core
                 {
                     return false;
                 }
+                doc.IsLoadFromFile = true;
+                doc.PathFrom = doc.GetPath();
 
-                using StreamReader streamReader = new StreamReader(doc.GetPath());
+                using StreamReader streamReader = new StreamReader(doc.PathFrom);
                 using StreamWriter streamWriter = new StreamWriter(doc.GetPath());
-                int totalLineCount = doc.GetTotalLineCount();
 
-                { 
+                {
                     for (int lineIndex = 0; lineIndex < doc.PartOffset; lineIndex++)
                     {
                         string? line;
@@ -255,17 +245,23 @@ namespace Word.Core
                     }
                 }
 
-                { 
-                    for (int lineIndex = 0; lineIndex < doc.Buffer.Count; lineIndex++)
+                {
+                    foreach (DocumentPart docPart in doc.PartBuffer)
                     {
-                        streamWriter.WriteLine(doc.Buffer[lineIndex - doc.PartOffset]);
-                        streamReader.ReadLine();
+                        for (int lineIndex = 0; lineIndex < docPart.Buffer.Count; lineIndex++)
+                        {
+                            streamWriter.WriteLine(doc.PartBuffer[lineIndex - doc.PartOffset]);
+                            if (lineIndex < docPart.SizePart)
+                            {
+                                streamReader.ReadLine();
+                            }
+                        }
                     }
                 }
 
-                { 
+                {
                     string? line;
-                    for (; (line = streamReader.ReadLine()) != null; )
+                    for (; (line = streamReader.ReadLine()) != null;)
                     {
                         streamWriter.WriteLine(line);
                     }

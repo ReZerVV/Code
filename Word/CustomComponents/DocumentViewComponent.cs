@@ -46,7 +46,7 @@ namespace Word.CustomComponents
             else
                 Doc.InsertText(keyInfo.KeyChar.ToString(), Cursor);
         }
-
+        
         public void Update()
         {
             if (AppState.ThemeChanged)
@@ -83,7 +83,10 @@ namespace Word.CustomComponents
                 h: Size.y,
                 color: NumberingStripBackground);
 
-            Canvas documentCanvas = new Canvas(Doc.Buffer.Max(line => line.Length) + 1, Doc.Buffer.Count, Background);
+            Canvas documentCanvas = new Canvas(
+                Doc.PartBuffer.SelectMany(part => part.Buffer).Max(line => line.Length) + 1,
+                Doc.PartBuffer.SelectMany(part => part.Buffer).ToList().Count, Background
+            );
             
             var markupText = Doc.Markup();
             for (int markupTextIndex = 0, linePosition = 0;
@@ -121,12 +124,12 @@ namespace Word.CustomComponents
                         style: StyleToPixelStyle(markupText[markupTextIndex][markupTextIndexOffset].StyleOptions));
                     offsetPosition += markupText[markupTextIndex][markupTextIndexOffset].Value.Length;
                 }
-                if (markupTextIndex == Cursor.GetLineIndex())
+                if (markupTextIndex == Cursor.Line)
                 {
                     documentCanvas.DrawSymbol(
-                        symbol: Cursor.Offset >= Doc.Buffer[Cursor.GetLineIndex()].Length
+                        symbol: Cursor.Offset >= Doc[Cursor.Line].Length
                             ? " "
-                            : Doc.Buffer[markupTextIndex][Cursor.Offset].ToString(),
+                            : Doc[markupTextIndex][Cursor.Offset].ToString(),
                         x: Cursor.Offset,
                         y: linePosition,
                         foreground: Background,
